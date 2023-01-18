@@ -2,6 +2,8 @@
 
 ## Summary
 
+[![機動戦士のんちゃん](http://img.youtube.com/vi/LADcNpvA-8U/0.jpg)](https://www.youtube.com/watch?v=LADcNpvA-8U)
+
 This program is a sample of AnimatedGIF Library.
 You can play "[Mobile Suit NON-chan](https://nosferatunon.wixsite.com/nonchan/kn-non)" Animated GIF and BGM on your Digital TV (composite).
 
