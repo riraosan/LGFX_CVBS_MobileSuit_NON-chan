@@ -16,24 +16,23 @@ I have tested this sample program with the following devices.
 - [ATOM Speaker Kit (NS4168)](https://www.switch-science.com/catalog/7092/)
 - microSD 16M(TF-CARD)
 - External Digital Analog Converter(DAC Bit per sample is 32bit or 16bit)
-  - NS4168(16Bit per sample)
+  - NS4168    (16Bit per sample)
   - ES9038MQ2M(32Bit per sample)
 
 ## How to build
 
 This sample has been tested to build only in the PlatformIO IDE environment.
-We have not checked if it can be built in the Arduino IDE environment. If you know how to build it, we would appreciate it if you commit it to this repository.
+I have not checked if it can be built in the Arduino IDE environment. If you know how to build it, I would appreciate it if you commit it to this repository.
 
-If you want to build in Arduino IDE environment, please change the setting of platformio.ini for Arduino IDE environment. We believe that the settings will probably be almost the same.
+If you want to build in Arduino IDE environment, please change the setting of platformio.ini for Arduino IDE environment. I believe that the settings will probably be almost the same.
 
 ### Library's
 
-I checked with arduino-esp32 library version 1.0.6. If you use arduino-esp32 library of series 2, you may step on compile error or operation bug. Please be aware of this.
-> For example, the arduino-esp32's I2S library has different names for the constant definitions to be set in the driver between Series 1 and Series 2. I didn't notice the difference and got stuck for a while.
+I checked with arduino-esp32 library version 2.0.3. 
 
 ```yaml:platformio.ini
 [arduino-esp32]
-platform          = platformio/espressif32@^3.5.0
+platform          = platformio/espressif32@^4.4.0
 ```
 
 I have put the GitHub link to the library under the `lib_deps =` directive. You can download the library from GitHub yourself and register it with the Arduino IDE.
@@ -42,18 +41,9 @@ I have put the GitHub link to the library under the `lib_deps =` directive. You 
 lib_deps =
         https://github.com/bitbank2/AnimatedGIF.git#1.4.7
         https://github.com/m5stack/M5Unified.git#0.0.7
-        https://github.com/earlephilhower/ESP8266Audio.git#1.9.5
+        https://github.com/earlephilhower/ESP8266Audio.git
         https://github.com/LennartHennigs/Button2.git
 ```
-
-### Composite(CVBS) Signal Output
-
-- [x] If you want the composite video output port to be G26, please include `ENABLE_GPIO26` in the build flags. The default output port is G25.
-
-```yaml:platformio.ini
-build_flags =
-        -D ENABLE_GPIO26
-````
 
 ### I2S Audio Output
 
@@ -62,8 +52,8 @@ build_flags =
 ```cpp
   // Audio
   out = new AudioOutputI2S(I2S_NUM_1);  // CVBSがI2S0を使っている。AUDIOはI2S1を設定
-  out->SetPinout(21, 25, 22);
-  out->SetGain(0.8);  // 1.0だと音が大きすぎる。0.3ぐらいが適当。後は外部アンプで増幅するのが適切。
+  out->SetPinout(21, 25, 22);           // for TF-CARD Module
+  out->SetGain(0.8);                    // 1.0だと音が大きすぎる。0.3ぐらいが適当。後は外部アンプで増幅するのが適切。
 ```
 
 - The ATOM SPK module's built-in DAC has 16 sample bits. You do not need to replace the modification file or add build flags.
