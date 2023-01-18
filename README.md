@@ -26,7 +26,7 @@ I have not checked if it can be built in the Arduino IDE environment. If you kno
 
 If you want to build in Arduino IDE environment, please change the setting of platformio.ini for Arduino IDE environment. I believe that the settings will probably be almost the same.
 
-### Library's
+### Library
 
 I checked with arduino-esp32 library version 2.0.3. 
 
