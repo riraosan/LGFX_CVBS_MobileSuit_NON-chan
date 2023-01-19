@@ -8,6 +8,23 @@
 #include <LGFX_8BIT_CVBS.h>
 #include <AnimatedGIF.h>
 
+#define TFCARD_CS_PIN -1
+#define LGFX          LGFX_8BIT_CVBS
+
+#define LGFX_ONLY
+#define USE_DISPLAY
+
+#if defined(NON4)
+#define SDU_APP_NAME "NON-Chan ep4"
+#elif defined(NON5)
+#define SDU_APP_NAME "NON-Chan ep5"
+#elif defined(KANDENCH)
+#define SDU_APP_NAME "KANDENCH flash"
+#elif defined(KATAYAMA)
+#define SDU_APP_NAME "KATAYAMAgerion"
+#endif
+#include <M5StackUpdater.h>
+
 static LGFX_8BIT_CVBS _display;
 static M5Canvas       _sprite(&_display);
 
@@ -21,6 +38,19 @@ public:
   }
 
   void begin(void) {
+    _display.begin();
+    _display.startWrite();
+    _display.fillScreen(TFT_BLACK);
+    _display.display();
+
+    setSDUGfx(&_display);
+    checkSDUpdater(
+        SD,            // filesystem (default=SD)
+        MENU_BIN,      // path to binary (default=/menu.bin, empty string=rollback only)
+        10000,         // wait delay, (default=0, will be forced to 2000 upon ESP.restart() )
+        TFCARD_CS_PIN  // (usually default=4 but your mileage may vary)
+    );
+
     _width  = _display.width();
     _height = _display.height();
 
@@ -28,14 +58,10 @@ public:
 
     _sprite.setColorDepth(8);
     _sprite.setRotation(0);
-    // if (!_sprite.createSprite(180, 96)) {
+
     if (!_sprite.createSprite(180, 147)) {
       log_e("can not allocate sprite buffer.");
     }
-    _display.begin();
-    _display.startWrite();
-    _display.fillScreen(TFT_BLACK);
-    _display.display();
 
     _display.setFont(&fonts::Font0);
     _display.setTextWrap(false);
@@ -61,9 +87,6 @@ public:
       }
 
       if (_gif.playFrame(false, &_waitTime)) {
-        // _sprite.pushRotateZoom(0, 1.3, 1.6);
-        // _display.display();
-
         int actualWait;
 
         // Fine-tune the synchronization of BGM and GIF frames
@@ -135,8 +158,6 @@ public:
         _isActive   = false;
         _frameCount = 0;
       }
-    } else {
-      showGuide("Double Click: Episode 4", "  Long Click: Episode 5");
     }
 
     _display.display();

@@ -57,4 +57,27 @@ public:
 
     setPanel(&_panel_instance);
   }
+
+  template <typename T>
+  void clearDisplay(T color = 0) { fillScreen(color); }
+
+  void display() {}
+
+  void progressBar(int x, int y, int w, int h, uint8_t val, uint16_t color = 0x09F1, uint16_t bgcolor = 0x0000) {
+    drawRect(x, y, w, h, color);
+    if (val > 100)
+      val = 100;
+    if (val == 0) {
+      fillRect(x + 1, y + 1, w - 2, h - 2, bgcolor);
+    } else {
+      int fillw = (w * (((float)val) / 100.0)) - 2;
+      fillRect(x + 1, y + 1, fillw - 2, h - 2, color);
+      fillRect(x + fillw + 1, y + 1, w - fillw - 2, h - 2, bgcolor);
+    }
+  }
+
+  const uint32_t    &textcolor   = _text_style.fore_rgb888;
+  const uint32_t    &textbgcolor = _text_style.back_rgb888;
+  const textdatum_t &textdatum   = _text_style.datum;
+  const float       &textsize    = _text_style.size_x;
 };

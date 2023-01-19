@@ -24,7 +24,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-//#include <M5Atom.h>
+
 #include <AudioFileSourceSD.h>
 #include <AudioGeneratorMP3.h>
 // If the sample BIT of the DAC is 32 bits,
@@ -66,38 +66,26 @@ TaskHandle_t taskHandle;
 #define WAIT_MP3_5 1
 #define WAIT_GIF_5 1000
 
-enum class MESSAGE : int {
-  kMSG_LOOP,
-  kMSG_SETUP_STORY4,
-  kMSG_SETUP_STORY5,
-  kMSG_BEGIN_STORY4,
-  kMSG_BEGIN_STORY5,
-  kMSG_BEGIN_ALL,
-  kMSG_BEGIN_SINGLE,
-  kMSG_NEXT_EPISODE,
-  kMSG_BEGIN_KANDENCH,
-  kMSG_MAX,
-};
-
-MESSAGE msg  = MESSAGE::kMSG_LOOP;
-MESSAGE mode = MESSAGE::kMSG_BEGIN_SINGLE;
+bool bA = false;
+bool bB = false;
+bool bC = false;
 
 void handler(Button2 &btn) {
   switch (btn.getType()) {
     case clickType::single_click:
       Serial.print("single ");
-      msg = MESSAGE::kMSG_BEGIN_KANDENCH;
+      bB = true;
       break;
     case clickType::double_click:
       Serial.print("double ");
-      msg = MESSAGE::kMSG_BEGIN_STORY4;
+      bC = true;
       break;
     case clickType::triple_click:
       Serial.print("triple ");
       break;
     case clickType::long_click:
       Serial.print("long ");
-      msg = MESSAGE::kMSG_BEGIN_STORY5;
+      bA = true;
       break;
     case clickType::empty:
       break;
@@ -109,6 +97,45 @@ void handler(Button2 &btn) {
   Serial.print(" (");
   Serial.print(btn.getNumberOfClicks());
   Serial.println(")");
+}
+
+bool buttonAPressed(void) {
+  bool temp = bA;
+  bA        = false;
+
+  return temp;
+}
+
+bool buttonBPressed(void) {
+  bool temp = bB;
+  bB        = false;
+
+  return temp;
+}
+
+bool buttonCPressed(void) {
+  bool temp = bC;
+  bC        = false;
+
+  return temp;
+}
+
+void ButtonUpdate() {
+  button.loop();
+}
+
+void setupButton(void) {
+  // G39 button
+  button.setClickHandler(handler);
+  button.setDoubleClickHandler(handler);
+  button.setTripleClickHandler(handler);
+  button.setLongClickHandler(handler);
+  button.begin(39);
+
+  SDUCfg.setSDUBtnA(&buttonAPressed);
+  SDUCfg.setSDUBtnB(&buttonBPressed);
+  SDUCfg.setSDUBtnC(&buttonCPressed);
+  SDUCfg.setSDUBtnPoller(&ButtonUpdate);
 }
 
 void StatusCallback(void *cbData, int code, const char *string) {
@@ -212,6 +239,7 @@ void setupAV(String mp3File, String gifFile) {
 
 void setup() {
   log_d("Free Heap : %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+  setupButton();
 
   // Composite Display(NTSC)
   cvbs = new Video();
@@ -222,24 +250,17 @@ void setup() {
     log_e("Can not allocate Buffer.");
   }
 
-  // button
-  button.setClickHandler(handler);
-  button.setDoubleClickHandler(handler);
-  button.setTripleClickHandler(handler);
-  button.setLongClickHandler(handler);
-  button.begin(39);  // G39
+#if defined(NON4)
+  episode4();
+#elif defined(NON5)
+  episode5();
+#elif defined(KANDENCH)
+  kandench();
+#elif defined(KATAYAMA)
+  katayama();
+#endif
 
-  // SD
-  // M5.begin();
-  SPI.begin(SCK, MISO, MOSI, DUMMY);
-  SPI.setDataMode(SPI_MODE3);
-  if (!SD.begin(DUMMY, SPI, 80000000)) {  // 80MHz(MAX)
-    Serial.println("Card Mount Failed");
-    ESP.restart();
-  }
-
-  msg = MESSAGE::kMSG_LOOP;
-  log_d("Free Heap : %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));  //シングルバッファモードにするとメモリに余裕が生まれます。
+  log_d("Free Heap : %d", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
 }
 
 void episode4(void) {
@@ -260,31 +281,12 @@ void kandench(void) {
   startAV(500, 0);
 }
 
-void loop() {
-  switch (msg) {
-    case MESSAGE::kMSG_BEGIN_KANDENCH:
-      kandench();
-      msg = MESSAGE::kMSG_LOOP;
-      break;
-    case MESSAGE::kMSG_BEGIN_STORY4:
-      episode4();
-      msg = MESSAGE::kMSG_NEXT_EPISODE;
-      break;
-    case MESSAGE::kMSG_BEGIN_STORY5:
-      episode5();
-      msg = MESSAGE::kMSG_NEXT_EPISODE;
-      break;
-    case MESSAGE::kMSG_NEXT_EPISODE:
-      if (mode == MESSAGE::kMSG_BEGIN_ALL) {
-        msg = MESSAGE::kMSG_LOOP;  // TODO
-      } else if (mode == MESSAGE::kMSG_BEGIN_SINGLE) {
-        msg = MESSAGE::kMSG_LOOP;
-      }
-      break;
-    default:
-      break;
-  }
+void katayama(void) {
+  setupAV("/katayama.mp3", "/katayama.gif");
+  startAV(500, 0);
+}
 
+void loop() {
   cvbs->update();  // GIFアニメのウェイト時間毎に１フレームを描画する。
-  button.loop();
+  ButtonUpdate();
 }
