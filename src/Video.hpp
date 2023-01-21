@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <memory>
 #include <Arduino.h>
 #include <FS.h>
 #include <SD.h>
@@ -8,74 +9,44 @@
 #include <LGFX_8BIT_CVBS.h>
 #include <AnimatedGIF.h>
 
-#define TFCARD_CS_PIN -1
-#define LGFX          LGFX_8BIT_CVBS
-
-#define LGFX_ONLY
-#define USE_DISPLAY
-
-#if defined(NON4)
-#define SDU_APP_NAME "NON-Chan ep4"
-#elif defined(NON5)
-#define SDU_APP_NAME "NON-Chan ep5"
-#elif defined(KANDENCH)
-#define SDU_APP_NAME "KANDENCH flash"
-#elif defined(KATAYAMA)
-#define SDU_APP_NAME "KATAYAMAgerion"
-#endif
-#include <M5StackUpdater.h>
-
-static LGFX_8BIT_CVBS _display;
-static M5Canvas       _sprite(&_display);
-
 class Video {
 public:
-  Video() : _filename(""),
-            _story(0),
-            _isActive(false),
-            _isOpen(false),
-            _frameCount(0) {
+  Video(LGFX_8BIT_CVBS *display) : _filename(""),
+                                   _story(0),
+                                   _isActive(false),
+                                   _isOpen(false),
+                                   _frameCount(0) {
+    p_display = display;
+    p_sprite.reset(new M5Canvas(p_display));
   }
 
   void begin(void) {
-    _display.begin();
-    _display.startWrite();
-    _display.fillScreen(TFT_BLACK);
-    _display.display();
+    p_display->fillScreen(TFT_BLACK);
+    p_display->display();
 
-    setSDUGfx(&_display);
-    checkSDUpdater(
-        SD,            // filesystem (default=SD)
-        MENU_BIN,      // path to binary (default=/menu.bin, empty string=rollback only)
-        10000,         // wait delay, (default=0, will be forced to 2000 upon ESP.restart() )
-        TFCARD_CS_PIN  // (usually default=4 but your mileage may vary)
-    );
-
-    _width  = _display.width();
-    _height = _display.height();
+    _width  = p_display->width();
+    _height = p_display->height();
 
     log_i("width, %d, height, %d", _width, _height);
 
-    _sprite.setColorDepth(8);
-    _sprite.setRotation(0);
+    p_sprite->setColorDepth(8);
+    p_sprite->setRotation(0);
 
-    if (!_sprite.createSprite(180, 147)) {
+    if (!p_sprite->createSprite(180, 147)) {
       log_e("can not allocate sprite buffer.");
     }
 
-    _display.setFont(&fonts::Font0);
-    _display.setTextWrap(false);
-    _display.setTextSize(1);
+    p_sprite->setSwapBytes(true);
 
     _gif.begin(LITTLE_ENDIAN_PIXELS);
     log_i("start CVBS");
   }
 
   void showGuide(String first, String second) {
-    _display.setCursor(10, 10);
-    _display.print(first.c_str());
-    _display.setCursor(10, 10 + 9);
-    _display.print(second.c_str());
+    p_display->setCursor(10, 10);
+    p_display->print(first.c_str());
+    p_display->setCursor(10, 10 + 9);
+    p_display->print(second.c_str());
   }
 
   void update(void) {
@@ -83,68 +54,71 @@ public:
 
     if (_isActive) {
       if (_frameCount == 0) {
-        _display.fillScreen(TFT_BLACK);
+        p_display->fillScreen(TFT_BLACK);
       }
 
       if (_gif.playFrame(false, &_waitTime)) {
         int actualWait;
 
-        // Fine-tune the synchronization of BGM and GIF frames
-        if (_story == 5) {
-          _display.setPivot((_width >> 1) - 6, (_height >> 1) + 31);
-          _sprite.pushRotateZoom(0, 1.3, 1.6);
-          _display.display();
+#if defined(NON4)
+        p_display->setPivot(_width >> 1, (_height >> 1) + 30);
+        p_sprite->pushRotateZoom(0, 1.3, 1.6);
+        p_display->display();
 
-          actualWait = _waitTime - (lgfx::v1::millis() - _lTimeStart);
-          if (153 <= _frameCount && _frameCount <= 281) {
-            actualWait += 10;
-          } else if (282 <= _frameCount && _frameCount <= 404) {
-            actualWait += 10;  // OK
-          } else if (405 <= _frameCount && _frameCount <= 454) {
-            actualWait += 20;  // OK
-          } else if (455 <= _frameCount && _frameCount <= 479) {
-            actualWait += 45;  // OK
-          } else if (480 <= _frameCount && _frameCount <= 508) {
-            actualWait += 30;  // OK
-          } else if (509 <= _frameCount && _frameCount <= 637) {
-            actualWait += 10;  // OK
-          } else if (638 <= _frameCount && _frameCount <= 697) {
-            actualWait += 27;  // OK
-          } else if (698 <= _frameCount && _frameCount <= 771) {
-            actualWait += 22;  // OK
-          }
-        } else if (_story == 4) {  //-1478
-          _display.setPivot((_width >> 1) - 6, (_height >> 1) + 31);
-          _sprite.pushRotateZoom(0, 1.3, 1.6);
-          _display.display();
+        actualWait = _waitTime - (lgfx::v1::millis() - _lTimeStart);
+        if (0 <= _frameCount && _frameCount < 200) {
+          actualWait -= 1;
+        } else if (1336 <= _frameCount && _frameCount < 1536) {
+          actualWait -= 1;
+        }
+#elif defined(NON5)
+        p_display->setPivot(_width >> 1, (_height >> 1) + 30);
+        p_sprite->pushRotateZoom(0, 1.3, 1.6);
+        p_display->display();
 
-          actualWait = _waitTime - (lgfx::v1::millis() - _lTimeStart);
-          if (0 <= _frameCount && _frameCount < 200) {
-            actualWait -= 1;
-          } else if (200 <= _frameCount && _frameCount < 400) {
-            actualWait -= 2;
-          } else if (400 <= _frameCount && _frameCount < 600) {
-            actualWait -= 0;
-          } else if (600 <= _frameCount && _frameCount < 800) {
-            actualWait -= 2;
-          } else if (800 <= _frameCount && _frameCount < 1000) {
-            actualWait -= 0;
-          } else if (1000 <= _frameCount && _frameCount < 1200) {
-            actualWait -= 1;
-          } else if (1200 <= _frameCount && _frameCount < 1400) {
-            actualWait -= 1;
-          } else if (1400 <= _frameCount && _frameCount < 1566) {
-            actualWait -= 1;
-          }
-        } else {
-          _display.setPivot((_width >> 1) - 6, (_height >> 1) + 5);
-          _sprite.pushRotateZoom(0, 1.0, 1.0);
-          _display.display();
+        actualWait = _waitTime - (lgfx::v1::millis() - _lTimeStart);
+        if (0 <= _frameCount && _frameCount < 200) {
+          actualWait += 4;
+        } else if (200 <= _frameCount && _frameCount < 400) {
+          actualWait += 11;
+        } else if (400 <= _frameCount && _frameCount < 600) {
+          actualWait += 27;
+        } else if (600 <= _frameCount && _frameCount < 771) {
+          actualWait += 16;
+        }
+#elif defined(KANDENCH)
+        p_display->setPivot((_width >> 1) - 6, (_height >> 1) + 5);
+        p_sprite->pushRotateZoom(0, 1.0, 1.0);
+        p_display->display();
 
-          actualWait = _waitTime - (lgfx::v1::millis() - _lTimeStart);
+        actualWait = _waitTime - (lgfx::v1::millis() - _lTimeStart);
+        if (0 <= _frameCount && _frameCount < 292) {
+          actualWait -= 3;
+        } else if (292 <= _frameCount && _frameCount < 856) {
+          actualWait -= 5;
+        } else if (856 <= _frameCount && _frameCount < 1778) {
+          actualWait -= 4;
+        } else if (1778 <= _frameCount && _frameCount < 2560) {
+          actualWait -= 5;
+        } else if (2561 <= _frameCount && _frameCount < 3482) {
+          actualWait -= 5;
+        } else if (3482 <= _frameCount && _frameCount < 4985) {
           actualWait -= 4;
         }
+#elif defined(KATAYAMA)
+        p_display->setPivot((_width >> 1) - 6, (_height >> 1) + 5);
+        p_sprite->pushRotateZoom(0, 1.3, 1.6);
+        p_display->display();
 
+        actualWait = _waitTime - (lgfx::v1::millis() - _lTimeStart);
+        if (0 <= _frameCount && _frameCount < 30) {
+          actualWait -= 5;
+        } else if (30 <= _frameCount && _frameCount < 1356) {
+          actualWait -= 4;
+        } else if (1356 <= _frameCount && _frameCount < 2735) {
+          actualWait -= 5;
+        }
+#endif
         if (actualWait >= 0) {
           delay(actualWait);
         } else {
@@ -154,17 +128,13 @@ public:
         return;
       } else {
         closeGif();
-        _display.fillScreen(TFT_BLACK);
+        p_display->fillScreen(TFT_BLACK);
         _isActive   = false;
         _frameCount = 0;
       }
     }
 
-    _display.display();
-  }
-
-  void setSd(SDFS *sd) {
-    _pSD = sd;
+    p_display->display();
   }
 
   void setFilename(String name) {
@@ -214,7 +184,7 @@ public:
 
 private:
   static void *_GIFOpenFile(const char *fname, int32_t *pSize) {
-    _gifFile = _pSD->open(fname);
+    _gifFile = SD.open(fname);
 
     if (_gifFile) {
       *pSize = _gifFile.size();
@@ -306,8 +276,8 @@ private:
           }
         }              // while looking for opaque pixels
         if (iCount) {  // any opaque pixels?
-          _sprite.setWindow(pDraw->iX + x, y, iCount, 1);
-          _sprite.pushPixels((uint16_t *)usTemp, iCount, true);
+          p_sprite->setWindow(pDraw->iX + x, y, iCount, 1);
+          p_sprite->pushPixels((uint16_t *)usTemp, iCount, true);
           x += iCount;
           iCount = 0;
         }
@@ -332,13 +302,12 @@ private:
       for (x = 0; x < iWidth; x++) {
         usTemp[x] = usPalette[*s++];
       }
-      _sprite.setWindow(pDraw->iX, y, iWidth, 1);
-      _sprite.pushPixels((uint16_t *)usTemp, iWidth, true);
+      p_sprite->setWindow(pDraw->iX, y, iWidth, 1);
+      p_sprite->pushPixels((uint16_t *)usTemp, iWidth, true);
     }
   }
 
-  static SDFS *_pSD;
-  static File  _gifFile;
+  static File _gifFile;
 
   static int _width;
   static int _height;
@@ -353,10 +322,13 @@ private:
   unsigned long _lTimeStart;
   int32_t       _waitTime;
   int           _frameCount;
+
+  LGFX_8BIT_CVBS                  *p_display;
+  static std::unique_ptr<M5Canvas> p_sprite;
 };
 
-SDFS *Video::_pSD = nullptr;
-File  Video::_gifFile;
+std::unique_ptr<M5Canvas> Video::p_sprite;
+File                      Video::_gifFile;
 
 int Video::_width  = 0;
 int Video::_height = 0;
