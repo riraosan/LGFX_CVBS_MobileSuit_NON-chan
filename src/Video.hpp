@@ -61,7 +61,7 @@ public:
         int actualWait;
 
 #if defined(NON4)
-        p_display->setPivot(_width >> 1, (_height >> 1) + 30);
+        p_display->setPivot((_width >> 1) + 3, (_height >> 1) + 30);
         p_sprite->pushRotateZoom(0, 1.3, 1.6);
         p_display->display();
 
@@ -72,7 +72,7 @@ public:
           actualWait -= 1;
         }
 #elif defined(NON5)
-        p_display->setPivot(_width >> 1, (_height >> 1) + 30);
+        p_display->setPivot((_width >> 1) + 3, (_height >> 1) + 30);
         p_sprite->pushRotateZoom(0, 1.3, 1.6);
         p_display->display();
 
@@ -87,7 +87,7 @@ public:
           actualWait += 16;
         }
 #elif defined(KANDENCH)
-        p_display->setPivot((_width >> 1) - 6, (_height >> 1) + 5);
+        p_display->setPivot((_width >> 1) + 3, (_height >> 1));
         p_sprite->pushRotateZoom(0, 1.0, 1.0);
         p_display->display();
 
@@ -106,7 +106,7 @@ public:
           actualWait -= 4;
         }
 #elif defined(KATAYAMA)
-        p_display->setPivot((_width >> 1) - 6, (_height >> 1) + 5);
+        p_display->setPivot((_width >> 1) + 3, (_height >> 1) + 10);
         p_sprite->pushRotateZoom(0, 1.3, 1.6);
         p_display->display();
 
