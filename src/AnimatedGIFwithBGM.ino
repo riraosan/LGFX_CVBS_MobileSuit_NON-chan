@@ -46,13 +46,21 @@ static LGFX_8BIT_CVBS display;
 
 #if defined(NON4)
 #define SDU_APP_NAME "NON-Chan ep4"
+#define SDU_APP_PATH "/4_NON-Chan_ep4.bin"
 #elif defined(NON5)
 #define SDU_APP_NAME "NON-Chan ep5"
-#elif defined(KANDENCH)
-#define SDU_APP_NAME "KANDENCH flash"
-#elif defined(KATAYAMA)
-#define SDU_APP_NAME "KATAYAMAgerion"
+#define SDU_APP_PATH "/5_NON-Chan_ep5.bin"
 #endif
+
+#define MP3_FILE_4 "/data/non4.mp3"
+#define GIF_FILE_4 "/data/non4.gif"
+#define WAIT_MP3_4 100
+#define WAIT_GIF_4 1
+
+#define MP3_FILE_5 "/data/non5.mp3"
+#define GIF_FILE_5 "/data/non5.gif"
+#define WAIT_MP3_5 1
+#define WAIT_GIF_5 1000
 
 #include <M5StackUpdater.h>
 
@@ -66,21 +74,12 @@ Video video(&display);
 Ticker audioStart;
 Ticker videoStart;
 
+#define BUTTON_GPIO_NUM 16
 Button2 button;
 
 bool isActive = false;
 
 TaskHandle_t taskHandle;
-
-#define MP3_FILE_4 "/non4.mp3"
-#define GIF_FILE_4 "/non4.gif"
-#define WAIT_MP3_4 100
-#define WAIT_GIF_4 1
-
-#define MP3_FILE_5 "/non5.mp3"
-#define GIF_FILE_5 "/non5.gif"
-#define WAIT_MP3_5 1
-#define WAIT_GIF_5 1000
 
 bool bA = false;
 bool bB = false;
@@ -146,7 +145,7 @@ void setupButton(void) {
   button.setDoubleClickHandler(handler);
   button.setTripleClickHandler(handler);
   button.setLongClickHandler(handler);
-  button.begin(39);
+  button.begin(BUTTON_GPIO_NUM);
 
   SDUCfg.setSDUBtnA(&buttonAPressed);
   SDUCfg.setSDUBtnB(&buttonBPressed);
@@ -233,7 +232,7 @@ void setupAV(String mp3File, String gifFile) {
 
   // Audio
   out = new AudioOutputI2S(I2S_NUM_1);  // CVBSがI2S0を使っている。AUDIOはI2S1を設定
-  out->SetPinout(22, 21, 25);
+  out->SetPinout(13, 0, 15);
   out->SetGain(0.3);  // 1.0だと音が大きすぎる。0.3ぐらいが適当。後は外部アンプで増幅するのが適切。
 
   mp3 = new AudioGeneratorMP3();
@@ -277,10 +276,6 @@ void setup() {
   episode4();
 #elif defined(NON5)
   episode5();
-#elif defined(KANDENCH)
-  kandench();
-#elif defined(KATAYAMA)
-  katayama();
 #endif
 }
 
@@ -292,18 +287,6 @@ void episode4(void) {
 void episode5(void) {
   setupAV(MP3_FILE_5, GIF_FILE_5);
   startAV(WAIT_MP3_5, WAIT_GIF_5);
-}
-
-void kandench(void) {
-  setupAV("/kandenchiflash.mp3", "/kandenchiflash.gif");
-  startAV(500, 0);
-}
-
-void katayama(void) {
-  setupAV("/katayama.mp3", "/katayama.gif");
-  out->SetGain(0.5);
-
-  startAV(0, 0);
 }
 
 void loop() {

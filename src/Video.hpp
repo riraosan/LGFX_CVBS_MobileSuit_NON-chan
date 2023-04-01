@@ -67,9 +67,9 @@ public:
 
         actualWait = _waitTime - (lgfx::v1::millis() - _lTimeStart);
         if (0 <= _frameCount && _frameCount < 200) {
-          actualWait -= 1;
+          actualWait -= 0;
         } else if (1336 <= _frameCount && _frameCount < 1536) {
-          actualWait -= 1;
+          actualWait -= 0;
         }
 #elif defined(NON5)
         p_display->setPivot((_width >> 1) + 3, (_height >> 1) + 30);
@@ -78,9 +78,9 @@ public:
 
         actualWait = _waitTime - (lgfx::v1::millis() - _lTimeStart);
         if (0 <= _frameCount && _frameCount < 200) {
-          actualWait += 4;
+          actualWait += 5;
         } else if (200 <= _frameCount && _frameCount < 400) {
-          actualWait += 11;
+          actualWait += 12;
         } else if (400 <= _frameCount && _frameCount < 600) {
           actualWait += 27;
         } else if (600 <= _frameCount && _frameCount < 771) {
